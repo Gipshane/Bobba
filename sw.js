@@ -1,4 +1,4 @@
-const CACHE = 'lykke-v21';
+const CACHE = 'lykke-v22';
 const FILES = ['./hjem-appen.html'];
 
 self.addEventListener('install', e => {

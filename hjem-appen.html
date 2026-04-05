@@ -1363,7 +1363,7 @@
        TROFÉSIDE
     ══════════════════════════════════════════ */
     .trophy-page {
-      position: fixed; inset: 0; z-index: 500;
+      position: fixed; inset: 0; z-index: 750;
       opacity: 0; pointer-events: none;
       transition: opacity 0.35s ease;
       overflow-y: auto;
@@ -2877,16 +2877,6 @@
 
     <div class="meg-setting-row">
       <div>
-        <div class="meg-setting-label">Vis animasjons-knapp på brettet</div>
-        <div class="meg-setting-sub">Den lille 🎬-knappen nede til høyre</div>
-      </div>
-      <button class="toggle-switch on" id="megDemoToggle" onclick="toggleMegDemo()">
-        <div class="toggle-knob"></div>
-      </button>
-    </div>
-
-    <div class="meg-setting-row">
-      <div>
         <div class="meg-setting-label">ℹ️ Om appen</div>
         <div class="meg-setting-sub">Spilleregler, hjelpere og trofeer forklart</div>
       </div>
@@ -2905,6 +2895,21 @@
       <div class="reset-confirm-btns">
         <button class="btn-reset-yes" onclick="confirmBoardReset()">Ja, nullstill ✓</button>
         <button class="btn-reset-no"  onclick="hideResetConfirm()">Avbryt</button>
+      </div>
+    </div>
+
+    <div class="meg-setting-row">
+      <div>
+        <div class="meg-setting-label">🏆 Tøm trofeer</div>
+        <div class="meg-setting-sub">Sletter alle opptjente trofeer — kan ikke angres</div>
+      </div>
+      <button class="meg-action-btn danger" onclick="showTrophyResetConfirm()">Tøm</button>
+    </div>
+    <div class="reset-confirm" id="trophyResetConfirm">
+      Er du sikker? Alle trofeer slettes permanent.
+      <div class="reset-confirm-btns">
+        <button class="btn-reset-yes" onclick="confirmTrophyReset()">Ja, tøm ✓</button>
+        <button class="btn-reset-no"  onclick="hideTrophyResetConfirm()">Avbryt</button>
       </div>
     </div>
 
@@ -2999,9 +3004,6 @@
     <button class="modal-save" onclick="saveCapture()">Lagre — Bobba husker det 🌿</button>
   </div>
 </div>
-
-<!-- ══ DEMO FAB ══ -->
-<button class="demo-fab" onclick="openDemo()" title="Se animasjoner">🎬</button>
 
 <!-- ══ DEMO MODAL ══ -->
 <div class="modal-bg" id="demoModal">
@@ -3709,16 +3711,27 @@ let ORB_TOTAL = parseInt(store.get('orbTotal') || '12');
 let filledCount = 0;
 let bonusMode = false;
 let bonusOrbs = parseInt(store.get('bonusOrbs') || '0');
+let _demoMode = false; // true under demo-sekvenser — hindrer reelle tilstandsendringer
 
-const orbDefs = [
-  ...[0,45,90,135,180,225,270,315].map(a => ({a, r:112})),
-  ...[22,112,202,292].map(a => ({a, r:58}))
-];
+const ORB_LAYOUTS = {
+  6:  [...[0,60,120,180,240,300].map(a => ({a, r:100}))],
+  12: [
+    ...[0,45,90,135,180,225,270,315].map(a => ({a, r:112})),
+    ...[22,112,202,292].map(a => ({a, r:58}))
+  ],
+  18: [
+    ...[0,30,60,90,120,150,180,210,240,270,300,330].map(a => ({a, r:112})),
+    ...[15,75,135,195,255,315].map(a => ({a, r:55}))
+  ]
+};
+const orbDefs = ORB_LAYOUTS[12]; // bakoverkompatibilitet
 
 function initBoard() {
   const board = document.getElementById('orbBoard');
+  board.innerHTML = ''; // tøm eksisterende ringar
   const cx = 145, cy = 145;
-  orbDefs.forEach((o, i) => {
+  const layout = ORB_LAYOUTS[ORB_TOTAL] || ORB_LAYOUTS[12];
+  layout.forEach((o, i) => {
     const rad = (o.a - 90) * Math.PI / 180;
     const slot = document.createElement('div');
     slot.className = 'orb-slot';
@@ -3735,10 +3748,12 @@ function addOrb(type) {
   slot.classList.add('adding', 'filled-' + type);
   playOrbLand(type);
   setTimeout(() => slot.classList.remove('adding'), 950);
-  // Track stats
-  orbStats[type] = (orbStats[type] || 0) + 1;
-  saveOrbStats();
-  checkAndUnlockTrophies();
+  // Track stats (hoppes over under demo)
+  if (!_demoMode) {
+    orbStats[type] = (orbStats[type] || 0) + 1;
+    saveOrbStats();
+    checkAndUnlockTrophies();
+  }
   // Bobba reacts to each orb
   const bSm = document.querySelector('.bobba-sm');
   if (bSm && !bSm.classList.contains('celebrating')) {
@@ -3749,9 +3764,11 @@ function addOrb(type) {
   }
   filledCount++;
   document.getElementById('orbCount').textContent = filledCount;
-  saveBoardState();
-  updateBobbaGlow();
-  _addLifetimeOrb(); // tell opp livstidssaldo for Bobbas rom
+  if (!_demoMode) {
+    saveBoardState();
+    updateBobbaGlow();
+    _addLifetimeOrb(); // tell opp livstidssaldo for Bobbas rom
+  }
   // Bobba blusser ved kule-landing
   [document.querySelector('.bobba'), document.querySelector('.bobba-sm')].filter(Boolean).forEach(_flashBobba);
   // Feed helper
@@ -4227,8 +4244,8 @@ function showScreen(name) {
   const nav = document.getElementById('mainNav');
   if (nav) nav.classList.toggle('hidden', name === 'task');
   // Oppdater kontekstavhengig innhold
-  if (name === 'meg')   { renderMineSlengen(); }
-  if (name === 'home')  { loadNextHomeTask(); }
+  if (name === 'meg')   { if (_demoMode) _restoreAfterDemo(); renderMineSlengen(); }
+  if (name === 'home')  { if (_demoMode) _restoreAfterDemo(); loadNextHomeTask(); }
   if (name === 'brett') { renderSparkline(); renderBrettRom(); renderBrettTrofeer(); }
 }
 
@@ -5107,6 +5124,7 @@ function showBrettMsg(msg, duration = 3200) {
 }
 
 function resetBoardForDemo() {
+  _demoMode = true; // blokkerer lagring og trofe-opplåsing
   filledCount = 0;
   document.getElementById('orbCount').textContent = '0';
   document.getElementById('brettSub').textContent = 'Se på!';
@@ -5116,6 +5134,15 @@ function resetBoardForDemo() {
    'bbh-green','bbh-gold','bbh-blue','bbh-rainbow'].forEach(id => {
     const b = document.getElementById(id); if(b) b.style.width = '5%';
   });
+}
+
+function _restoreAfterDemo() {
+  if (!_demoMode) return;
+  _demoMode = false;
+  document.querySelectorAll('.orb-slot').forEach(s => { s.className = 'orb-slot'; });
+  loadBoardState();
+  setBrettStatus('');
+  syncHelperBars();
 }
 
 // Animate a helper "jumping" and flying an emoji toward the board
@@ -5609,18 +5636,24 @@ function toggleMegRotation() {
   if (rt) { rt.className = btn.className; }
 }
 
-function toggleMegDemo() {
-  const btn = document.getElementById('megDemoToggle');
-  btn.classList.toggle('on');
-  const demoBtn = document.getElementById('demoOpenBtn');
-  if (demoBtn) demoBtn.style.display = btn.classList.contains('on') ? '' : 'none';
-}
-
 function showResetConfirm() {
   document.getElementById('resetConfirm').classList.add('open');
 }
 function hideResetConfirm() {
   document.getElementById('resetConfirm').classList.remove('open');
+}
+function showTrophyResetConfirm() {
+  document.getElementById('trophyResetConfirm').classList.add('open');
+}
+function hideTrophyResetConfirm() {
+  document.getElementById('trophyResetConfirm').classList.remove('open');
+}
+function confirmTrophyReset() {
+  trophyData = { unlocked:[], streak:0, lordagsfreder:0, totalBonusOrbs:0, aretsBobbaSeen:0, allHelpersWeek:{}, speedBoardUnlocked:false };
+  saveTrophyData();
+  renderBrettTrofeer();
+  hideTrophyResetConfirm();
+  setTimeout(() => setBobbaMsg('"Blanke ark! Trofeer er tømt. ✨"'), 400);
 }
 function confirmBoardReset() {
   // Fjern brett-data fra localStorage
@@ -7775,27 +7808,28 @@ function renderTrophyGrid() {
 }
 
 function showTrophyPage() {
-  // Årets Bobba: award on first visit of a new year if user has been active
-  const currentYear = new Date().getFullYear();
-  if (currentYear > (trophyData.aretsBobbaSeen || 0)) {
-    const hasActivity = (orbStats.weeks||0) > 0 || (orbStats.green||0) > 0;
-    if (hasActivity) {
-      trophyData.aretsBobbaSeen = currentYear;
-      saveTrophyData();
-      unlockTrophy('arets-bobba');
+  try {
+    // Årets Bobba: award on first visit of a new year if user has been active
+    const currentYear = new Date().getFullYear();
+    if (currentYear > (trophyData.aretsBobbaSeen || 0)) {
+      const hasActivity = (orbStats.weeks||0) > 0 || (orbStats.green||0) > 0;
+      if (hasActivity) {
+        trophyData.aretsBobbaSeen = currentYear;
+        saveTrophyData();
+        unlockTrophy('arets-bobba');
+      }
     }
+    spawnTrophyStars();
+    renderTrophyGrid();
+    const unlCount = (trophyData.unlocked || []).length;
+    const subline = document.getElementById('trophySubline');
+    if (subline) subline.textContent = unlCount + ' av ' + TROPHY_DEFS.length + ' trofeer opplåst';
+    const megCount = document.getElementById('trophyUnlockedCount');
+    if (megCount) megCount.textContent = unlCount;
+    _setRaysActive(bonusMode || filledCount === ORB_TOTAL);
+  } catch(e) {
+    console.error('showTrophyPage feil:', e);
   }
-
-  spawnTrophyStars();
-  renderTrophyGrid();
-
-  const unlCount = trophyData.unlocked.length;
-  const subline = document.getElementById('trophySubline');
-  if (subline) subline.textContent = unlCount + ' av ' + TROPHY_DEFS.length + ' trofeer opplåst';
-  const megCount = document.getElementById('trophyUnlockedCount');
-  if (megCount) megCount.textContent = unlCount;
-
-  _setRaysActive(bonusMode || filledCount === ORB_TOTAL);
   document.getElementById('trophyPage').classList.add('open');
 }
 
