@@ -1365,11 +1365,10 @@
     .trophy-page {
       position: fixed; inset: 0; z-index: 750;
       background: #040110;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.35s ease;
+      display: none;
       overflow-y: auto;
     }
-    .trophy-page.open { opacity: 1; pointer-events: all; }
+    .trophy-page.open { display: block; }
 
     .trophy-sky-bg {
       position: absolute; inset: 0; z-index: 0; pointer-events: none;
@@ -2364,8 +2363,8 @@
     }
     .stue-shop-card:active { transform: scale(0.93); }
     .stue-shop-card.owned { border-color: rgba(100,220,130,0.45); background: rgba(40,180,80,0.07); }
-    .stue-shop-card.locked { opacity: 0.42; cursor: not-allowed; }
-    .stue-shop-card.cant-afford { opacity: 0.38; cursor: not-allowed; }
+    .stue-shop-card.locked { opacity: 0.45; cursor: not-allowed; }
+    .stue-shop-card.cant-afford { opacity: 0.72; cursor: not-allowed; }
     /* Glittrende stjerne-thumbnail i butikken */
     .stue-shop-star {
       position: relative; width: 100%; aspect-ratio: 1;
@@ -2482,7 +2481,7 @@
 <div class="screen active" id="screen-home">
   <div class="home-top">
     <div class="home-top-text">
-      <div class="greeting" id="homeGreeting">God dag, Camilla 🌿</div>
+      <div class="greeting" id="homeGreeting">God dag, Hjernen 🌿</div>
       <div class="date-text" id="dateDisplay"></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
@@ -2703,7 +2702,7 @@
 <div class="screen" id="screen-meg">
   <div class="meg-header">
     <div class="meg-avatar"></div>
-    <div class="meg-greeting">Hei, <span id="megNameDisplay">Camilla</span> 👋</div>
+    <div class="meg-greeting">Hei, <span id="megNameDisplay">Hjernen</span> 👋</div>
     <div class="meg-quote" id="megQuote">"Bobba er alltid her."</div>
     <div class="meg-name-row">
       <input class="meg-name-input" id="megNameInput" placeholder="Ditt navn..." maxlength="24">
@@ -5623,7 +5622,7 @@ function renderStoreGreier() {
 }
 
 function _updateNameInUI(name) {
-  const n = name || store.get('userName') || 'Camilla';
+  const n = name || store.get('userName') || 'Hjernen';
   const greeting = document.getElementById('homeGreeting');
   if (greeting) {
     const h = new Date().getHours();
@@ -5708,7 +5707,7 @@ function loadMegScreen() {
   _buildMegSoundPicker();
 
   // Name
-  const name = store.get('userName') || 'Camilla';
+  const name = store.get('userName') || 'Hjernen';
   _updateNameInUI(name);
   document.getElementById('megNameInput').placeholder = name;
 
@@ -7877,11 +7876,11 @@ function closeTrophyPage() {
 // ROMKART
 // ══════════════════════════════════════════
 const DEFAULT_ROOMS = [
-  { id:'r-stua',    emoji:'🛋', name:'Stua',    category:'inne',  lastCleaned: Date.now() - 2*86400000 },
-  { id:'r-kjokken', emoji:'🍳', name:'Kjøkken', category:'inne',  lastCleaned: Date.now() - 1*86400000 },
-  { id:'r-bad',     emoji:'🚿', name:'Bad',     category:'inne',  lastCleaned: Date.now() - 4*86400000 },
-  { id:'r-sovrom',  emoji:'🛏', name:'Soverom', category:'inne',  lastCleaned: Date.now() - 3*86400000 },
-  { id:'r-gang',    emoji:'🚪', name:'Gang',    category:'inne',  lastCleaned: Date.now() - 5*86400000 },
+  { id:'r-stua',    emoji:'🛋', name:'Stua',    category:'inne',  lastCleaned: 0 },
+  { id:'r-kjokken', emoji:'🍳', name:'Kjøkken', category:'inne',  lastCleaned: 0 },
+  { id:'r-bad',     emoji:'🚿', name:'Bad',     category:'inne',  lastCleaned: 0 },
+  { id:'r-sovrom',  emoji:'🛏', name:'Soverom', category:'inne',  lastCleaned: 0 },
+  { id:'r-gang',    emoji:'🚪', name:'Gang',    category:'inne',  lastCleaned: 0 },
 ];
 
 // Forhåndsdefinerte steg for standard kjerneoppgaver
