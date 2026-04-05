@@ -1364,6 +1364,7 @@
     ══════════════════════════════════════════ */
     .trophy-page {
       position: fixed; inset: 0; z-index: 750;
+      background: #040110;
       opacity: 0; pointer-events: none;
       transition: opacity 0.35s ease;
       overflow-y: auto;
@@ -1371,7 +1372,7 @@
     .trophy-page.open { opacity: 1; pointer-events: all; }
 
     .trophy-sky-bg {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
       background:
         linear-gradient(175deg,
           rgba(var(--glow-a),0.32) 0%,
@@ -2913,6 +2914,21 @@
       </div>
     </div>
 
+    <div class="meg-setting-row" style="margin-top:8px">
+      <div>
+        <div class="meg-setting-label">🆕 Ny bruker / Send til venn</div>
+        <div class="meg-setting-sub">Nullstiller alt — kuler, navn, trofeer, rom og slenger. Appen blir helt ren.</div>
+      </div>
+      <button class="meg-action-btn danger" onclick="showFullResetConfirm()">Nullstill alt</button>
+    </div>
+    <div class="reset-confirm" id="fullResetConfirm">
+      Dette sletter ALT — navn, kuler, trofeer, Bobbas rom, slenger og rutiner. Appen starter helt på nytt. Er du sikker?
+      <div class="reset-confirm-btns">
+        <button class="btn-reset-yes" onclick="confirmFullReset()">Ja, nullstill alt ✓</button>
+        <button class="btn-reset-no"  onclick="hideFullResetConfirm()">Avbryt</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -3728,7 +3744,8 @@ const orbDefs = ORB_LAYOUTS[12]; // bakoverkompatibilitet
 
 function initBoard() {
   const board = document.getElementById('orbBoard');
-  board.innerHTML = ''; // tøm eksisterende ringar
+  // Fjern kun orb-slot-elementer — behold Bobba, sol-stråler og bonuslag
+  board.querySelectorAll('.orb-slot').forEach(el => el.remove());
   const cx = 145, cy = 145;
   const layout = ORB_LAYOUTS[ORB_TOTAL] || ORB_LAYOUTS[12];
   layout.forEach((o, i) => {
@@ -5655,6 +5672,23 @@ function confirmTrophyReset() {
   hideTrophyResetConfirm();
   setTimeout(() => setBobbaMsg('"Blanke ark! Trofeer er tømt. ✨"'), 400);
 }
+
+function showFullResetConfirm()  { document.getElementById('fullResetConfirm').classList.add('open'); }
+function hideFullResetConfirm()  { document.getElementById('fullResetConfirm').classList.remove('open'); }
+function confirmFullReset() {
+  // Slett alle nøkler fra localStorage
+  const keys = [
+    'userName','filledCount','slotTypes','bonusOrbs','bonusMode','orbTotal','difficulty',
+    'helperFeed','weekHistory','weekStart','weeklyFilledCount','weeklyCompletionHistory',
+    'trophyData','orbStats','capturedTasks',
+    'lifetimeOrbs','stuePurchased','stueHidden','stueInitialized',
+    'roomItems','rooms','customClusters','rutiner','storeGreier',
+    'focusSoundType','currentTheme','fixedTheme','themeDate',
+  ];
+  keys.forEach(k => store.del(k));
+  // Last inn siden på nytt — alt starter friskt
+  setTimeout(() => location.reload(), 300);
+}
 function confirmBoardReset() {
   // Fjern brett-data fra localStorage
   ['filledCount','slotTypes','bonusOrbs','helperFeed',
@@ -6386,6 +6420,8 @@ function setDifficulty(level) {
   const totEl = document.getElementById('orbTotalDisplay');
   if (totEl) totEl.textContent = ORB_TOTAL;
   _updateDiffBtns(level);
+  // Re-bygg brett med riktig antall plasser
+  initBoard();
   doWeeklyReset();
   const msgs = {
     'pusterom':  '"Pusterom-brett — 6 kuler. Bobba er her uansett. 🌱"',
